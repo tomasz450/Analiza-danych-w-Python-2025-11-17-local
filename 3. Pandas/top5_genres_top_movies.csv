@@ -1,0 +1,26 @@
+genre_group,title,star_rating,duration,genre
+Drama,12 Angry Men,8.9,96,Drama
+Drama,Fight Club,8.9,139,Drama
+Drama,Forrest Gump,8.8,142,Drama
+Drama,One Flew Over the Cuckoo's Nest,8.7,133,Drama
+Drama,Seven Samurai,8.7,207,Drama
+Comedy,Life Is Beautiful,8.6,116,Comedy
+Comedy,Modern Times,8.6,87,Comedy
+Comedy,City Lights,8.6,87,Comedy
+Comedy,Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb,8.5,95,Comedy
+Comedy,The Great Dictator,8.5,125,Comedy
+Action,The Dark Knight,9.0,152,Action
+Action,Star Wars: Episode V - The Empire Strikes Back,8.8,124,Action
+Action,Inception,8.8,148,Action
+Action,Star Wars,8.7,121,Action
+Action,The Matrix,8.7,136,Action
+Crime,The Shawshank Redemption,9.3,142,Crime
+Crime,The Godfather,9.2,175,Crime
+Crime,The Godfather: Part II,9.1,200,Crime
+Crime,Pulp Fiction,8.9,154,Crime
+Crime,City of God,8.7,130,Crime
+Biography,Schindler's List,8.9,195,Biography
+Biography,Goodfellas,8.7,146,Biography
+Biography,The Intouchables,8.6,112,Biography
+Biography,The Pianist,8.5,150,Biography
+Biography,Amadeus,8.4,160,Biography
