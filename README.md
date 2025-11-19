@@ -1,13 +1,12 @@
-# analiza-danych-2025-03-24
+# analiza-danych-2025-11-17
 
 # https://www.kaggle.com/learn
 
 # https://miroslawmamczur.pl/blog/
 
+# https://streamlit.io
+
 ## Polecane książki :)
-
-(https://libgen.is/)
-
 
 - Data science od podstaw. Analiza danych w Pythonie. Wydanie II
 
