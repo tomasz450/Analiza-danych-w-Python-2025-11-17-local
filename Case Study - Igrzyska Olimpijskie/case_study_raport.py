@@ -1,9 +1,10 @@
 import streamlit as st
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import plotly.graph_objects as go
 from io import BytesIO
+import locale
 
 # Konfiguracja strony
 st.set_page_config(
@@ -73,7 +74,76 @@ with col2:
         format="YYYY-MM-DD"
     )
 
-# Walidacja dat
+# Funkcja walidująca datę wprowadzoną przez użytkownika
+def parse_validate_date(value, label: str = "Data", min_date: date | None = None, max_date: date | None = None) -> date:
+    """Spróbuj sparsować i zwalidować wejściową datę.
+
+    - akceptuje obiekt `date` / `datetime`, albo string (próbuje `pd.to_datetime` z dayfirst=True)
+    - w razie błędu pokaże komunikat w sidebar i zatrzyma aplikację
+    - sprawdza granice `min_date` i `max_date` jeżeli podane
+    """
+    import re
+    import unicodedata
+
+    def _normalize(s: str) -> str:
+        # usuń diakrytyczne znaki, zamień na małe litery
+        nf = unicodedata.normalize('NFKD', s)
+        return ''.join(ch for ch in nf if not unicodedata.combining(ch)).lower()
+
+    # mapa polskich nazw miesięcy (nominative i genitive, krótkie formy) -> English month
+    month_map = {
+        'styczen': 'January', 'stycznia': 'January', 'sty': 'January',
+        'luty': 'February', 'lutego': 'February', 'lut': 'February',
+        'marzec': 'March', 'marca': 'March', 'mar': 'March',
+        'kwiecien': 'April', 'kwietnia': 'April', 'kwi': 'April',
+        'maj': 'May', 'maja': 'May',
+        'czerwiec': 'June', 'czerwca': 'June', 'cze': 'June',
+        'lipiec': 'July', 'lipca': 'July', 'lip': 'July',
+        'sierpien': 'August', 'sierpnia': 'August', 'sie': 'August',
+        'wrzesien': 'September', 'wrzesnia': 'September', 'wrz': 'September',
+        'pazdziernik': 'October', 'pazdziernika': 'October', 'paz': 'October', 'pazdz': 'October',
+        'listopad': 'November', 'listopada': 'November', 'lis': 'November',
+        'grudzien': 'December', 'grudnia': 'December', 'gru': 'December',
+    }
+
+    try:
+        # jeśli to już obiekt datetime/date
+        if isinstance(value, (datetime, date)):
+            parsed = pd.to_datetime(value).date()
+        else:
+            s = str(value).strip()
+            # normalize input to remove diacritics for matching
+            s_norm = _normalize(s)
+
+            # replace any polish month word with English month name
+            pattern = r"\b(" + "|".join(re.escape(k) for k in month_map.keys()) + r")\b"
+            def _repl(m):
+                return month_map.get(m.group(1), m.group(1))
+
+            s_repl = re.sub(pattern, _repl, s_norm, flags=re.IGNORECASE)
+
+            # pandas can parse the transformed string with dayfirst=True
+            parsed = pd.to_datetime(s_repl, dayfirst=True, errors='raise').date()
+    except Exception as e:
+        st.sidebar.error(f"Błędna data dla '{label}': {value}. Podaj poprawną datę. ({e})")
+        st.stop()
+
+    if min_date is not None and parsed < min_date:
+        st.sidebar.error(f"{label} nie może być wcześniej niż {min_date.isoformat()}")
+        st.stop()
+    if max_date is not None and parsed > max_date:
+        st.sidebar.error(f"{label} nie może być późniejsza niż {max_date.isoformat()}")
+        st.stop()
+
+    return parsed
+
+# Walidacja daty wprowadzonej przez użytkownika (dodatkowo sprawdzamy zakres danych API)
+min_api_date = datetime(2013, 1, 2).date()
+max_allowed = datetime.now().date()
+
+start_date = parse_validate_date(start_date, label="Data początkowa", min_date=min_api_date, max_date=max_allowed)
+end_date = parse_validate_date(end_date, label="Data końcowa", min_date=min_api_date, max_date=max_allowed)
+
 if start_date > end_date:
     st.sidebar.error("Data początkowa nie może być późniejsza niż data końcowa!")
     st.stop()
@@ -116,9 +186,34 @@ if 'gold_data' in st.session_state:
     with col4:
         st.metric("Liczba notowań", len(df))
     
-    # Wykres interaktywny
+
+
+
+    # Ustaw polskie locale (dodaj na początku pliku, po importach)
+    try:
+        locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+    except locale.Error:
+        try:
+            locale.setlocale(locale.LC_TIME, 'Polish_Poland.1250')  # Dla Windows
+        except locale.Error:
+            pass  # Jeśli locale nie jest dostępne, zostaw angielski
+
+
+        # Wykres interaktywny
     st.subheader("📊 Wykres kursu ceny złota")
-    
+
+    # Polskie nazwy miesięcy
+    polish_months = {
+        'Jan': 'Sty', 'Feb': 'Lut', 'Mar': 'Mar', 'Apr': 'Kwi',
+        'May': 'Maj', 'Jun': 'Cze', 'Jul': 'Lip', 'Aug': 'Sie',
+        'Sep': 'Wrz', 'Oct': 'Paź', 'Nov': 'Lis', 'Dec': 'Gru'
+    }
+
+    # Sformatuj daty po polsku dla osi X
+    df['data_display'] = df['data'].dt.strftime('%d %b %Y')
+    for eng, pl in polish_months.items():
+        df['data_display'] = df['data_display'].str.replace(eng, pl)
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df['data'],
@@ -126,19 +221,33 @@ if 'gold_data' in st.session_state:
         mode='lines+markers',
         name='Cena złota',
         line=dict(color='gold', width=2),
-        marker=dict(size=6)
+        marker=dict(size=6),
+        customdata=df['data_display'],
+        hovertemplate='<b>Data:</b> %{customdata}<br><b>Cena:</b> %{y:.2f} PLN<extra></extra>'
     ))
-    
+
+    # Wybierz co którą datę pokazać (np. co 3 dni dla czytelności)
+    step = max(1, len(df) // 10)
+    tickvals = df['data'].iloc[::step]
+    ticktext = df['data_display'].iloc[::step]
+
     fig.update_layout(
         title="Kurs ceny złota (1 gram)",
         xaxis_title="Data",
         yaxis_title="Cena (PLN)",
-        hovermode='x unified',
+        hovermode='closest',
         height=500,
-        template="plotly_white"
+        template="plotly_white",
+        xaxis=dict(
+            tickmode='array',
+            tickvals=tickvals,
+            ticktext=ticktext,
+            tickangle=-45
+        )
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
+
     
     # Tabela z danymi
     st.subheader("📋 Dane tabelaryczne")
