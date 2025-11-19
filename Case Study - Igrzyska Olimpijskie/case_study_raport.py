@@ -173,18 +173,18 @@ if st.sidebar.button("🔄 Pobierz dane", type="primary"):
 if 'gold_data' in st.session_state:
     df = st.session_state['gold_data']
     
-    # Statystyki
-    st.subheader("📈 Statystyki")
-    col1, col2, col3, col4 = st.columns(4)
+    # # Statystyki
+    # st.subheader("📈 Statystyki")
+    # col1, col2, col3, col4 = st.columns(4)
     
-    with col1:
-        st.metric("Średnia cena", f"{df['cena'].mean():.2f} PLN")
-    with col2:
-        st.metric("Cena minimalna", f"{df['cena'].min():.2f} PLN")
-    with col3:
-        st.metric("Cena maksymalna", f"{df['cena'].max():.2f} PLN")
-    with col4:
-        st.metric("Liczba notowań", len(df))
+    # with col1:
+    #     st.metric("Średnia cena", f"{df['cena'].mean():.2f} PLN")
+    # with col2:
+    #     st.metric("Cena minimalna", f"{df['cena'].min():.2f} PLN")
+    # with col3:
+    #     st.metric("Cena maksymalna", f"{df['cena'].max():.2f} PLN")
+    # with col4:
+    #     st.metric("Liczba notowań", len(df))
     
 
 
